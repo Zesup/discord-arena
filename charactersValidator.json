@@ -1,0 +1,30 @@
+{
+	"validator" : {
+		"$jsonSchema" : {
+			"bsonType" : "object",
+			"required" : [
+				"discordName",
+				"discordID",
+				"class",
+				"level"
+			],
+			"properties" : {
+				"discordName" : {
+					"bsonType" : "string"
+				},
+				"discordID" : {
+					"bsonType" : "string"
+				},
+				"class" : {
+					"bsonType" : "string"
+				},
+				"level" : {
+					"minimum" : 0,
+					"bsonType" : "int"
+				}
+			}
+		}
+	},
+	"validationLevel" : "strict",
+	"validationAction" : "error"
+}

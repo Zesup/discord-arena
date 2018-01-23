@@ -4,13 +4,13 @@ process.title = "discordarena";
 const Discord = require('discord.js');
 const client = new Discord.Client();
 var server = null;
+var channel = null;
 
 //MongoDB Integration
 const mongo = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const url = 'mongodb://localhost:27017/arena';
 const dbName = 'arena';
-const colName = 'characters';
 
 ////Connect to database
 //(async function () {
@@ -19,7 +19,7 @@ const colName = 'characters';
 //        dbClient = await MongoClient.connect(url);
 //        console.log("Connected to " + dbName);
 //        const db = dbClient.db(dbName);
-//        const col = db.collection(colName);
+//        const col = db.collection('characters');
 //} catch (err) {
 //console.log(err.stack);
 //}
@@ -27,7 +27,7 @@ const colName = 'characters';
 //
 //      //Create character
 //      await col.insertOne({name: "test",class: "Barbarian",strength: 20});
-//      console.log("Character successfully created in"+colName );
+//      console.log("Character successfully created in characters"  );
 
 //      //Get multiple characters
 //      const testfind = col.find({name: "test"}).limit(1);
@@ -47,14 +47,15 @@ const colName = 'characters';
 //        const testfind = await col.findOne({name: "test"});
 //        console.log(testfind);
 
-//Secret Token from Discord Developers
+//Secret Token for the Bot (from Discord Developers)
 client.login('Mzg1MzcxNjI2MDg4MzAwNTQ0.DQAY2A.YK6aoMM4ph5G3MIP7pAqgF_kl3U');
 
 client.on('ready', () => {
     console.log('I am ready!');
     server = client.guilds.get("256079257162350602");
-    console.log('' + server.name);
-    server.channels.find(chan => chan.id === "384709036924469250").send("Arena, ready to serve."); //Changer les 2 ID en fonction de votre chan  
+    console.log(`${server.name}`);
+    channel = server.channels.find(chan => chan.id === "384709036924469250");
+    channel.send("Arena, ready to serve."); //Changer les 2 ID en fonction de votre chan  
 
 });
 client.on('message', message => {
@@ -65,35 +66,38 @@ client.on('message', message => {
         const command = args.shift().toLowerCase();
         console.log(args);
         console.log(command);
+
         if (command === "create") {
+            if (args[0] !== "" && args[1] !== "") {
+                const character = {
+                    discordID: message.author.id,
+                    discordName: message.author.username,
+                    class: args[0],
+                    level: parseInt(args[1])
+                };
+                //Connect to database
+                (async function () {
+                    let dbClient;
+                    try {
+                        dbClient = await MongoClient.connect(url);
+                        console.log("Connected to " + dbName);
+                        const db = dbClient.db(dbName);
+                        const col = db.collection('characters');
 
-            const character = {
-                name: message.author.username,
-                class: args[0],
-                level: parseInt(args[1])
-            };
-            console.log(character);
-            //Connect to database
-            (async function () {
-                let dbClient;
-                try {
-                    dbClient = await MongoClient.connect(url);
-                    console.log("Connected to " + dbName);
-                    const db = dbClient.db(dbName);
-                    const col = db.collection(colName);
+                        //MongoDB Operations HERE
+                        await col.insertOne(character);
+                        console.log("Character successfully created in characters");
 
-                    //MongoDB Operations HERE
-                    await col.insertOne(character);
-                    console.log("Character successfully created in " + colName);
-
-                    const charVerif = await col.findOne({name: message.author.username});
-                    console.log(charVerif);
-                    message.reply("Bienvenue à toi, " + charVerif.class + " " + charVerif.name + " de niveau " + charVerif.level);
-                } catch (err) {
-                    console.log(err.stack);
-                }
-            })();
-
+                        const charVerif = await col.findOne({discordName: character.discordName});
+                        console.log(charVerif);
+                        message.reply("Bienvenue à toi, " + charVerif.class + " " + charVerif.discordName + " de niveau " + charVerif.level);
+                    } catch (err) {
+                        console.log(err.stack);
+                        message.reply("Vous avez déja un personnage.");
+                    }
+                })();
+            } else
+                message.reply("Pour créer un personnage, tapez !create [Nom de classe] [niveau]");
         }
 
         if (command === "infos") {
@@ -103,20 +107,124 @@ client.on('message', message => {
                     dbClient = await MongoClient.connect(url);
                     console.log("Connected to " + dbName);
                     const db = dbClient.db(dbName);
-                    const col = db.collection(colName);
-                    
-                    const charVerif = await col.findOne({name: message.author.username});
+
+                    let replyDM = "";
+
+                    let col = db.collection('characters');
+                    const charVerif = await col.findOne({discordName: message.author.username});
                     console.log(charVerif);
-                    if(charVerif===null)
-                        message.reply("Vous n'avez pas encore de personnage. Utilisez !create <classe> <niveau>");
-                    else
-                        message.reply("vous êtes un " + charVerif.class + " de niveau " + charVerif.level);
+                    if (charVerif === null)
+                        replyDM = "Vous n'avez pas encore de personnage.";
+                    else {
+                        replyDM += (charVerif.discordName + ", " + charVerif.class + " de niveau " + charVerif.level + "\n");
+                        col = db.collection('items');
+                        const items = await col.find({characterName: message.author.username});
+                        if (items === null)
+                            message.reply("Aucun équipement.");
+                        else
+                        {
+                            var i = 1;
+                            while (await items.hasNext())
+                            {
+                                const obj = await items.next();
+                                console.log(obj);
+                                replyDM += ("Item " + i + " : " + obj.itemType + " " + obj.itemName + " - Force " + obj.itemPower + "\n");
+                                i++;
+                            }
+
+                        }
+                    }
+                    message.author.send(replyDM);
                 } catch (err) {
                     console.log(err.stack);
                 }
             })();
         }
+       
+        if (command === "additem") {
+            const item = {
+                characterName: message.author.username,
+                itemType: args[0],
+                itemName: args[1],
+                itemPower: parseInt(args[2])
+            };
+            //Connect to database
+            (async function () {
+                let dbClient;
+                try {
+                    dbClient = await MongoClient.connect(url);
+                    console.log("Connected to " + dbName);
+                    const db = dbClient.db(dbName);
+                    const col = db.collection('items');
 
+                    //MongoDB Operations HERE
+                    await col.insertOne(item);
+                    console.log("Item successfully created in DB items");
+
+                    let replyDM = "";
+                    const items = await col.find({characterName: message.author.username});
+                    if (items === null)
+                        message.reply("Vous n'avez aucun équipement.");
+                    else
+                    {
+                        var i = 1;
+                        while (await items.hasNext())
+                        {
+                            const obj = await items.next();
+                            console.log(obj);
+                            replyDM += ("Item " + i + " : " + obj.itemType + " " + obj.itemName + " - Force " + obj.itemPower + "\n");
+                            i++;
+                        }
+                        message.author.send(replyDM);
+                    }
+                } catch (err) {
+                    console.log(err.stack);
+                    message.reply("Erreur.");
+                }
+            })();
+        }
+
+        if (command === "battle") {
+            const enemyName = args[0];
+            if (enemyName === "")
+                message.reply("Veuillez préciser le nom de votre adversaire. Utilisez !battle <nom adversaire>");
+            else
+            {
+                //Simple comparaison des levels
+                (async function () {
+                    let dbClient;
+                    try {
+                        dbClient = await MongoClient.connect(url);
+                        console.log("Connected to " + dbName);
+                        const db = dbClient.db(dbName);
+                        const col = db.collection('characters');
+
+                        const charVerif = await col.findOne({discordName: message.author.username});
+                        console.log(charVerif);
+                        if (charVerif === null)
+                            message.reply("Vous n'avez pas encore de personnage. Utilisez !create <classe> <niveau>");
+                        else
+                        {
+                            const enemyVerif = await col.findOne({discordName: enemyName});
+                            console.log(enemyVerif);
+                            if (enemyVerif === null)
+                                message.reply("Adversaire introuvable");
+                            else
+                            {
+                                let attackUser = server.members.get(charVerif.discordID);
+                                let enemyUser = server.members.get(enemyVerif.discordID);
+                                if (charVerif.level > enemyVerif.level)
+                                    channel.send(`${attackUser} vient de battre ${enemyUser} !`);
+                                else
+                                    channel.send(`${attackUser} vient de se faire battre par ${enemyUser} !`);
+                            }
+
+                        }
+                    } catch (err) {
+                        console.log(err.stack);
+                    }
+                })();
+            }
+        }
     }
 });
- 
