@@ -65,16 +65,68 @@ client.on('message', message => {
         const args = message.content.slice(prefix.length).trim().split(/ +/g);
         const command = args.shift().toLowerCase();
         console.log(args);
-        console.log(command);
 
         if (command === "create") {
-            if (args[0] !== "" && args[1] !== "") {
-                const character = {
-                    discordID: message.author.id,
-                    discordName: message.author.username,
-                    class: args[0],
-                    level: parseInt(args[1])
-                };
+            var character = null;
+            switch (args[0]) {
+                case "Barbare":
+                    character = {
+                        discordID: message.author.id,
+                        discordName: message.author.username,
+                        class: args[0],
+                        statSTR: 7,
+                        statRES: 1,
+                        statCON: 5,
+                        statAGI: 3
+                    };
+                    break;
+                case "Aventurier":
+                    character = {
+                        discordID: message.author.id,
+                        discordName: message.author.username,
+                        class: args[0],
+                        statSTR: 4,
+                        statRES: 4,
+                        statCON: 4,
+                        statAGI: 4
+                    };
+                    break;
+                case "Sorcier":
+                    character = {
+                        discordID: message.author.id,
+                        discordName: message.author.username,
+                        class: args[0],
+                        statSTR: 1,
+                        statRES: 3,
+                        statCON: 7,
+                        statAGI: 5
+                    };
+                    break;
+                case "Templier":
+                    character = {
+                        discordID: message.author.id,
+                        discordName: message.author.username,
+                        class: args[0],
+                        statSTR: 3,
+                        statRES: 7,
+                        statCON: 5,
+                        statAGI: 1
+                    };
+                    break;
+                case "Voleur":
+                    character = {
+                        discordID: message.author.id,
+                        discordName: message.author.username,
+                        class: args[0],
+                        statSTR: 3,
+                        statRES: 1,
+                        statCON: 5,
+                        statAGI: 7
+                    };
+                    break;
+            }
+
+            if (character !== null) {
                 //Connect to database
                 (async function () {
                     let dbClient;
@@ -90,15 +142,16 @@ client.on('message', message => {
 
                         const charVerif = await col.findOne({discordName: character.discordName});
                         console.log(charVerif);
-                        message.reply("Bienvenue à toi, " + charVerif.class + " " + charVerif.discordName + " de niveau " + charVerif.level);
+                        message.reply("Bienvenue à toi, " + charVerif.class + " " + charVerif.discordName);
                     } catch (err) {
                         console.log(err.stack);
-                        message.reply("Vous avez déja un personnage.");
+                        message.reply("Erreur NoSQL.");
                     }
                 })();
             } else
-                message.reply("Pour créer un personnage, tapez !create [Nom de classe] [niveau]");
+                message.reply("Commande erronée.");
         }
+
 
         if (command === "infos") {
             (async function () {
@@ -116,7 +169,8 @@ client.on('message', message => {
                     if (charVerif === null)
                         replyDM = "Vous n'avez pas encore de personnage.";
                     else {
-                        replyDM += (charVerif.discordName + ", " + charVerif.class + " de niveau " + charVerif.level + "\n");
+                        replyDM += (charVerif.discordName + " - Classe " + charVerif.class + "\n");
+                        replyDM += ("Force "+charVerif.statSTR+" - Résistance "+charVerif.statRES+" - Concentration "+charVerif.statCON+" - Agilité "+charVerif.statAGI + "\n");
                         col = db.collection('items');
                         const items = await col.find({characterName: message.author.username});
                         if (items === null)
@@ -137,10 +191,11 @@ client.on('message', message => {
                     message.author.send(replyDM);
                 } catch (err) {
                     console.log(err.stack);
+                    message.reply("Erreur NoSQL.");
                 }
             })();
         }
-       
+
         if (command === "additem") {
             const item = {
                 characterName: message.author.username,
@@ -179,7 +234,7 @@ client.on('message', message => {
                     }
                 } catch (err) {
                     console.log(err.stack);
-                    message.reply("Erreur.");
+                    message.reply("Erreur NoSQL.");
                 }
             })();
         }
@@ -222,6 +277,7 @@ client.on('message', message => {
                         }
                     } catch (err) {
                         console.log(err.stack);
+                        message.reply("Erreur NoSQL.");
                     }
                 })();
             }
