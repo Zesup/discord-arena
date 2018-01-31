@@ -4,6 +4,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 var server = null;
 var channel = null;
+var emojis = null;
 //MongoDB Integration
 const mongo = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
@@ -15,9 +16,10 @@ client.on('ready', () => {
     //Changer les 2 ID en fonction de votre channel
     console.log('I am ready!');
     server = client.guilds.get("256079257162350602");
+    emojis = server.emojis;
     console.log(`${server.name}`);
     channel = server.channels.find(chan => chan.id === "384709036924469250");
-    channel.send("Arena, ready to serve.");
+    channel.send("Welcome to the Arena.");
 });
 client.on('message', message => {
     if (!message.author.bot) {
@@ -315,6 +317,7 @@ function startBattle(message, enemyName) {
             console.log("Connected to " + dbName);
             const db = dbClient.db(dbName);
             let col = db.collection('characters');
+            let colPhrases = db.collection('generic_catchphrases');
             const attacker = await col.findOne({discordName: message.author.username});
             console.log("attaquant :" + attacker.discordName);
             if (attacker === null)
@@ -329,7 +332,7 @@ function startBattle(message, enemyName) {
                 {
                     let attackUser = server.members.get(attacker.discordID);
                     let defendUser = server.members.get(defender.discordID);
-                    channel.send(`Début du combat entre ${attackUser} et ${defendUser} !`);
+                    channel.send(`🤜💥🤛 Début du combat entre ${attackUser} et ${defendUser} !`);
                     //Récupération des statistiques des deux joueurs
                     let awp = 0;
                     let aap = 0;
@@ -411,9 +414,13 @@ function startBattle(message, enemyName) {
                     if (Math.random() < 0.6) //attacker - Compétences actives se déclenchent à 60% de chances
                     {
                         if (attacker.skillPhrase === null)
-                            channel.send(attacker.discordName + ` a lancé son skill actif !`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomSkillPhrase = await colPhrases.findOne({id:randomID,phraseType:"skill"});                            
+                            channel.send(`🔥 ` + attacker.discordName + ": \"" + randomSkillPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(attacker.discordName + ": \"" + attacker.skillPhrase + "\"");
+                            channel.send(`🔥 ` + attacker.discordName + ": \"" + attacker.skillPhrase + "\"");
                         switch (defender.class)
                         {
                             case "Barbare":
@@ -452,9 +459,13 @@ function startBattle(message, enemyName) {
                     if (Math.random() < 0.6) //defender - Deux jets différents pour chaque joueur
                     {
                         if (defender.skillPhrase === null)
-                            channel.send(defender.discordName + ` a lancé son skill actif !`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomSkillPhrase = await colPhrases.findOne({id:randomID,phraseType:"skill"});                            
+                            channel.send(`🔥 ` +defender.discordName + ": \"" + randomSkillPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(defender.discordName + ": \"" + defender.skillPhrase + "\"");
+                            channel.send(`🔥 ` +defender.discordName + ": \"" + defender.skillPhrase + "\"");
                         switch (defender.class)
                         {
                             case "Barbare":
@@ -567,9 +578,9 @@ function startBattle(message, enemyName) {
                             else
                                 ahp = 0;
                         }
-                        let roundSummary = "Passe d'armes " + currentRound + "\n";
-                        roundSummary += (attacker.discordName + " Chances : " + chancesToHitAtk + " - Jet d'attaque : " + Math.round(randAttacker) + " - Dégats infligés : " + dmgAtkFromRound + "\n");
-                        roundSummary += (defender.discordName + " Chances : " + chancesToHitDef + " - Jet d'attaque : " + Math.round(randDefender) + " - Dégats infligés : " + dmgDefFromRound + "\n");
+                        let roundSummary = "⚔ Passe d'armes " + currentRound + "\n";
+                        roundSummary += ("["+attacker.discordName+"]" + " Chances : " + Math.round(chancesToHitAtk) + " - Jet d'attaque : " + Math.round(randAttacker) + " - Dégats infligés : " + dmgAtkFromRound + "\n");
+                        roundSummary += ("["+defender.discordName+"]" + " Chances : " + Math.round(chancesToHitDef) + " - Jet d'attaque : " + Math.round(randDefender) + " - Dégats infligés : " + dmgDefFromRound + "\n");
                         roundSummary += ("Points de vie restants - " + attacker.discordName + " : " + ahp + " / " + defender.discordName + " : " + dhp);
                         channel.send(roundSummary);
                     }
@@ -579,38 +590,62 @@ function startBattle(message, enemyName) {
                     {
                         await channel.send(`${attackUser} ${defendUser} Double KO !`);
                         if (defender.defeatPhrase === null)
-                            channel.send(`"NANI!?"`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomDefeatPhrase = await colPhrases.findOne({id:randomID,phraseType:"defeat"});                            
+                            channel.send(`☠` + defender.discordName + ": \"" + randomDefeatPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(defender.discordName + ": \"" + defender.defeatPhrase + "\"");
+                            channel.send(`☠` +defender.discordName + ": \"" + defender.defeatPhrase + "\"");
                         if (attacker.defeatPhrase === null)
-                            channel.send(`"NANI!?"`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomDefeatPhrase = await colPhrases.findOne({id:randomID,phraseType:"defeat"});                            
+                            channel.send(`☠` +attacker.discordName + ": \"" + randomDefeatPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(attacker.discordName + ": \"" + attacker.defeatPhrase + "\"");
+                            channel.send(`☠` +attacker.discordName + ": \"" + attacker.defeatPhrase + "\"");
                     } else if (ahp === 0) // défaite de l'attaquant
                     {
-                        await channel.send(`Victoire de ${defendUser} sur ${attackUser} !`);
+                        await channel.send(`🔔` + `Victoire de ${defendUser} sur ${attackUser} !`);
                         if (defender.victoryPhrase === null)
-                            channel.send(`"Omoe wa mu shinderu"`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomVictoryPhrase = await colPhrases.findOne({id:randomID,phraseType:"victory"});                            
+                            channel.send(`✌` +defender.discordName + ": \"" + randomVictoryPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(defender.discordName + ": \"" + defender.victoryPhrase + "\"");
+                            channel.send(`✌` +defender.discordName + ": \"" + defender.victoryPhrase + "\"");
                         if (attacker.defeatPhrase === null)
-                            channel.send(`"NANI!?"`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomDefeatPhrase = await colPhrases.findOne({id:randomID,phraseType:"defeat"});                            
+                            channel.send(`☠` +attacker.discordName + ": \"" + randomDefeatPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(attacker.discordName + ": \"" + attacker.defeatPhrase + "\"");
+                            channel.send(`☠` +attacker.discordName + ": \"" + attacker.defeatPhrase + "\"");
                     } else if (dhp === 0) //défaite du défenseur
                     {
-                        await channel.send(`Victoire de ${attackUser} sur ${defendUser} !`);
+                        await channel.send(`🔔` + `Victoire de ${attackUser} sur ${defendUser} !`);
                         if (attacker.victoryPhrase === null)
-                            channel.send(`"Omoe wa mu shinderu"`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomVictoryPhrase = await colPhrases.findOne({id:randomID,phraseType:"victory"});                            
+                            channel.send(`✌` +attacker.discordName + ": \"" + randomVictoryPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(attacker.discordName + ": \"" + attacker.victoryPhrase + "\"");
+                            channel.send(`✌` +attacker.discordName + ": \"" + attacker.victoryPhrase + "\"");
                         if (defender.defeatPhrase === null)
-                            channel.send(`"NANI!?"`);
+                        {
+                            let randomID = Math.floor(Math.random()*5);
+                            let randomDefeatPhrase = await colPhrases.findOne({id:randomID,phraseType:"defeat"});                            
+                            channel.send(`☠` +defender.discordName + ": \"" + randomDefeatPhrase.phrase + "\"");
+                        }
                         else
-                            channel.send(defender.discordName + ": \"" + defender.defeatPhrase + "\"");
+                            channel.send(`☠` +defender.discordName + ": \"" + defender.defeatPhrase + "\"");
+                        
                         //Phase de gain d'item (seulement si attaquant vainqueur)
                         let type = "";
-                        let name = "test";
                         let power = 0;
                         let jetniv = Math.random();
                         let taux = 1 + Math.pow(2, -(3 - aluk / 4)) + Math.pow(3, -(3 - aluk / 4)) + Math.pow(4, -(3 - aluk / 4)) + Math.pow(5, -(3 - aluk / 4)) + Math.pow(6, -(3 - aluk / 4));
@@ -714,4 +749,12 @@ function setDefeatPhrase(message, phrase) {
             message.reply("Erreur NoSQL.");
         }
     })();
+}
+
+function getEmoji(emojiName) //Seulement pour les custom emojis, sinon mettre le caractère unicode directement dans le message
+{
+    if(emojis!==null)
+    {
+        return emojis.find(emoji => emoji.name = ":"+emojiName+":");
+    }
 }
