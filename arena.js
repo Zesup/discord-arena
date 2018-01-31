@@ -301,6 +301,7 @@ function startBattle(message, enemyName) {
           let ares = attacker.statRES;
           let aluk = attacker.statLUK;
           let aagi = attacker.statAGI;
+          let atp="";
           let dwp = 0;
           let dap = 0;
           let dhp = 10;
@@ -308,6 +309,7 @@ function startBattle(message, enemyName) {
           let dres = defender.statRES;
           let dluk = defender.statLUK;
           let dagi = defender.statAGI;
+          let dtp="";
           //Récupération des statistiques de l'équipement
           col = db.collection('items');
           if (attacker.armorEquipID !== 0)
@@ -326,40 +328,43 @@ function startBattle(message, enemyName) {
           {
             let equipedItem = await col.findOne({characterName: defender.discordName, itemID: defender.weaponEquipID});
             dwp = equipedItem.itemPower;
-            if (equipedItem.itemType === "Hache" && defender.class === "Barbare") {
+            dtp=equipedItem.itemType;
+            if (dtp === "Hache" && defender.class === "Barbare") {
               dwp += 2;
             }
-            if (equipedItem.itemType === "Lance" && defender.class === "Templier") {
+            if (dtp === "Lance" && defender.class === "Templier") {
               dwp += 2;
             }
-            if (equipedItem.itemType === "Epée" && defender.class === "Voleur") {
+            if (dtp === "Epée" && defender.class === "Voleur") {
               dwp += 2;
             }
-            if (equipedItem.itemType === "Magie" && defender.class === "Sorcier") {
+            if (dtp === "Magie" && defender.class === "Sorcier") {
               dwp += 2;
             }
-            if (equipedItem.itemType === "Magie") {
+            if (dtp=== "Magie") {
               aap = 0;
             }
+
           }
 
           if (attacker.weaponEquipID !== 0)
           {
             let equipedItem = await col.findOne({characterName: attacker.discordName, itemID: attacker.weaponEquipID});
             awp = equipedItem.itemPower;
-            if (equipedItem.itemType === "Hache" && attacker.class === "Barbare") {
+            atp=equipedItem.itemType;
+            if (atp === "Hache" && attacker.class === "Barbare") {
               awp += 2;
             }
-            if (equipedItem.itemType === "Lance" && attacker.class === "Templier") {
+            if (atp === "Lance" && attacker.class === "Templier") {
               awp += 2;
             }
-            if (equipedItem.itemType === "Epée" && attacker.class === "Voleur") {
+            if (atp === "Epée" && attacker.class === "Voleur") {
               awp += 2;
             }
-            if (equipedItem.itemType === "Magie" && attacker.class === "Sorcier") {
+            if (atp === "Magie" && attacker.class === "Sorcier") {
               awp += 2;
             }
-            if (equipedItem.itemType === "Magie") {
+            if (atp === "Magie") {
               dap = 0;
             }
           }
@@ -455,6 +460,48 @@ function startBattle(message, enemyName) {
           let hitModificator = 2 * (aagi - dagi) + aluk - dluk;
           let chancesToHitAtk = 75 + hitModificator;
           let chancesToHitDef = 75 - hitModificator;
+
+          switch(atp+dtp)
+          {
+            case "HacheLance":
+            {
+              chancesToHitAtk*=1.2;
+              chancesToHitDef*=0.8;
+              break;
+            }
+            case "HacheEpee":
+            {
+              chancesToHitAtk*=0.8;
+              chancesToHitDef*=1.2;
+              break;
+            }
+            case "EpeeHache":
+            {
+              chancesToHitAtk*=1.2;
+              chancesToHitDef*=0.8;
+              break;
+            }
+            case "EpeeLance":
+            {
+              chancesToHitAtk*=0.8;
+              chancesToHitDef*=1.2;
+              break;
+            }
+            case "LanceEpee":
+            {
+              chancesToHitAtk*=1.2;
+              chancesToHitDef*=0.8;
+              break;
+            }
+            case "LanceHache":
+            {
+              chancesToHitAtk*=0.8;
+              chancesToHitDef*=1.2;
+              break;
+            }
+          }
+
+
           //Début des tours de combat
           let currentRound = 0;
           while (ahp * dhp > 0)
