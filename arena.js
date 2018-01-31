@@ -112,10 +112,10 @@ client.on('message', message => {
             const enemyName = args[0];
             if (enemyName === "")
                 message.reply("Tapez !battle <Nom Discord de l'adversaire> pour lancer un combat.");
+            else if( enemyName === message.author.username )            
+                message.reply("vient de se blesser dans sa confusion");
             else
-            {
                 startBattle(message, enemyName);
-            }
         }
 
         if (command === "victoryphrase" || command === "vp")
@@ -156,7 +156,7 @@ client.on('message', message => {
             let helpMessage = "= Discord Arena - Classes de personnage\n";
             helpMessage += "= [ Les combattants commencent à 10 HP - Les skills actifs ont 60% de chances de se lancer au début du combat ]  \n";
             helpMessage += "= Barbare | FOR 8 | RES 5 | AGI 1 | LUK 2 | +2 dégats si équipé d'une Hache  \n";
-            helpMessage += "= Skill actif : Furie destructrice [FOR +3 - AGI et LUK à 0]\n";            
+            helpMessage += "= Skill actif : Furie destructrice [FOR +3 - AGI et LUK à 0]\n";
             helpMessage += "= Aventurier | FOR 4 | RES 4 | AGI 4 | LUK 4 | +2 dégats si équipé d'une Hache  \n";
             helpMessage += "= Skill actif : Polyvalence [All stats +1]\n";
             helpMessage += "= Sorcier | FOR 2 | RES 3 | AGI 3 | LUK 8 | +2 dégats si équipé d'une Magie  \n";
@@ -171,6 +171,7 @@ client.on('message', message => {
     }
 }
 );
+
 function createNewCharacter(message, character) {
     (async function () {
         let dbClient;
@@ -337,6 +338,7 @@ function startBattle(message, enemyName) {
                     let ares = attacker.statRES;
                     let aluk = attacker.statLUK;
                     let aagi = attacker.statAGI;
+                    let atp = "";
                     let dwp = 0;
                     let dap = 0;
                     let dhp = 10;
@@ -344,6 +346,8 @@ function startBattle(message, enemyName) {
                     let dres = defender.statRES;
                     let dluk = defender.statLUK;
                     let dagi = defender.statAGI;
+                    let dtp = "";
+
                     //Récupération des statistiques de l'équipement
                     col = db.collection('items');
                     if (attacker.armorEquipID !== 0)
@@ -362,40 +366,43 @@ function startBattle(message, enemyName) {
                     {
                         let equipedItem = await col.findOne({characterName: defender.discordName, itemID: defender.weaponEquipID});
                         dwp = equipedItem.itemPower;
-                        if (equipedItem.itemType === "Hache" && defender.class === "Barbare") {
+                        dtp = equipedItem.itemType;
+                        if (dtp === "Hache" && defender.class === "Barbare") {
                             dwp += 2;
                         }
-                        if (equipedItem.itemType === "Lance" && defender.class === "Templier") {
+                        if (dtp === "Lance" && defender.class === "Templier") {
                             dwp += 2;
                         }
-                        if (equipedItem.itemType === "Epée" && defender.class === "Voleur") {
+                        if (dtp === "Epée" && defender.class === "Voleur") {
                             dwp += 2;
                         }
-                        if (equipedItem.itemType === "Magie" && defender.class === "Sorcier") {
+                        if (dtp === "Magie" && defender.class === "Sorcier") {
                             dwp += 2;
                         }
-                        if (equipedItem.itemType === "Magie") {
+                        if (dtp === "Magie") {
                             aap = 0;
                         }
+
                     }
 
                     if (attacker.weaponEquipID !== 0)
                     {
                         let equipedItem = await col.findOne({characterName: attacker.discordName, itemID: attacker.weaponEquipID});
                         awp = equipedItem.itemPower;
-                        if (equipedItem.itemType === "Hache" && attacker.class === "Barbare") {
+                        atp = equipedItem.itemType;
+                        if (atp === "Hache" && attacker.class === "Barbare") {
                             awp += 2;
                         }
-                        if (equipedItem.itemType === "Lance" && attacker.class === "Templier") {
+                        if (atp === "Lance" && attacker.class === "Templier") {
                             awp += 2;
                         }
-                        if (equipedItem.itemType === "Epée" && attacker.class === "Voleur") {
+                        if (atp === "Epée" && attacker.class === "Voleur") {
                             awp += 2;
                         }
-                        if (equipedItem.itemType === "Magie" && attacker.class === "Sorcier") {
+                        if (atp === "Magie" && attacker.class === "Sorcier") {
                             awp += 2;
                         }
-                        if (equipedItem.itemType === "Magie") {
+                        if (atp === "Magie") {
                             dap = 0;
                         }
                     }
@@ -407,7 +414,7 @@ function startBattle(message, enemyName) {
                             channel.send(attacker.discordName + ` a lancé son skill actif !`);
                         else
                             channel.send(attacker.discordName + ": \"" + attacker.skillPhrase + "\"");
-                        switch (attacker.class)
+                        switch (defender.class)
                         {
                             case "Barbare":
                             {
@@ -440,7 +447,6 @@ function startBattle(message, enemyName) {
                                 aagi += 5;
                                 break;
                             }
-
                         }
                     }
                     if (Math.random() < 0.6) //defender - Deux jets différents pour chaque joueur
@@ -491,6 +497,46 @@ function startBattle(message, enemyName) {
                     let hitModificator = 2 * (aagi - dagi) + aluk - dluk;
                     let chancesToHitAtk = 75 + hitModificator;
                     let chancesToHitDef = 75 - hitModificator;
+
+                    switch (atp + dtp)
+                    {
+                        case "HacheLance":
+                        {
+                            chancesToHitAtk *= 1.2;
+                            chancesToHitDef *= 0.8;
+                            break;
+                        }
+                        case "HacheEpee":
+                        {
+                            chancesToHitAtk *= 0.8;
+                            chancesToHitDef *= 1.2;
+                            break;
+                        }
+                        case "EpeeHache":
+                        {
+                            chancesToHitAtk *= 1.2;
+                            chancesToHitDef *= 0.8;
+                            break;
+                        }
+                        case "EpeeLance":
+                        {
+                            chancesToHitAtk *= 0.8;
+                            chancesToHitDef *= 1.2;
+                            break;
+                        }
+                        case "LanceEpee":
+                        {
+                            chancesToHitAtk *= 1.2;
+                            chancesToHitDef *= 0.8;
+                            break;
+                        }
+                        case "LanceHache":
+                        {
+                            chancesToHitAtk *= 0.8;
+                            chancesToHitDef *= 1.2;
+                            break;
+                        }
+                    }
 
 
                     //Début des tours de combat
