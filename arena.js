@@ -5,22 +5,29 @@ const client = new Discord.Client();
 var server = null;
 var channel = null;
 var emojis = null;
+
+//Customizable Discord Configuration
+const botSecretToken = 'Mzg1MzcxNjI2MDg4MzAwNTQ0.DQAY2A.YK6aoMM4ph5G3MIP7pAqgF_kl3U';
+const guildID = "256079257162350602";
+const channelID = "384709036924469250";
+
 //MongoDB Integration
 const mongo = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const url = 'mongodb://localhost:27017/arena';
 const dbName = 'arena';
-//Secret Token for the Bot (from Discord Developers)
-client.login('Mzg1MzcxNjI2MDg4MzAwNTQ0.DQAY2A.YK6aoMM4ph5G3MIP7pAqgF_kl3U');
+
+client.login(botSecretToken);
 client.on('ready', () => {
     //Changer les 2 ID en fonction de votre channel
-    console.log('I am ready!');
-    server = client.guilds.get("256079257162350602");
+    console.log('Arena Bot - Ready!');
+    server = client.guilds.get(guildID);
     emojis = server.emojis;
     console.log(`${server.name}`);
-    channel = server.channels.find(chan => chan.id === "384709036924469250");
+    channel = server.channels.find(chan => chan.id === channelID);
     channel.send("Welcome to the Arena.");
 });
+
 client.on('message', message => {
     if (!message.author.bot) {
         const prefix = "!";
@@ -140,33 +147,33 @@ client.on('message', message => {
 
         if (command === "help" || command === "h")
         {
-            let helpMessage = "= Discord Arena - Commandes utiles\n";
-            helpMessage += "= !start + <Classe> - Crée votre personnage avec la classe choisie\n";
-            helpMessage += "= !classes !c - Détail des classes existantes\n";
-            helpMessage += "= !personnage !p - Fiche de personnage\n";
-            helpMessage += "= !equip !e + <X> - Equipe l'objet à la position X de votre fiche de personnage\n";
-            helpMessage += "= !battle + <Nom> - Démarre un combat entre vous et la cible\n";
-            helpMessage += "= !victoryphrase !vp + <Phrase> - Enregistre une phrase prononcée en cas de victoire\n";
-            helpMessage += "= !defeatphrase !dp + <Phrase> - Enregistre la phrase prononcée en cas de défaite\n";
-            helpMessage += "= !skillphrase !sp + <Phrase> - Enregistre la phrase prononcée lors du lancement du skill actif\n";
+            let helpMessage = "Discord Arena - Commandes utiles\n";
+            helpMessage += "!start + <Classe> - Crée votre personnage avec la classe choisie\n";
+            helpMessage += "!classes !c - Détail des classes existantes\n";
+            helpMessage += "!personnage !p - Fiche de personnage\n";
+            helpMessage += "!equip !e + <X> - Equipe l'objet à la position X de votre fiche de personnage\n";
+            helpMessage += "!battle + <Nom> - Démarre un combat entre vous et la cible\n";
+            helpMessage += "!victoryphrase !vp + <Phrase> - Enregistre une phrase prononcée en cas de victoire\n";
+            helpMessage += "!defeatphrase !dp + <Phrase> - Enregistre la phrase prononcée en cas de défaite\n";
+            helpMessage += "!skillphrase !sp + <Phrase> - Enregistre la phrase prononcée lors du lancement du skill actif\n";
             message.author.send(helpMessage);
             message.delete();
         }
 
         if (command === "classes" || command === "c")
         {
-            let helpMessage = "= Discord Arena - Classes de personnage\n";
-            helpMessage += "= [ Les combattants commencent à 10 HP - Les skills actifs ont 60% de chances de se lancer au début du combat ]  \n";
-            helpMessage += "= Barbare | FOR 8 | RES 5 | AGI 1 | LUK 2 | +2 dégats si équipé d'une Hache  \n";
-            helpMessage += "= Skill actif : Furie destructrice [FOR +3 - AGI et LUK à 0]\n";
-            helpMessage += "= Aventurier | FOR 4 | RES 4 | AGI 4 | LUK 4 | +2 dégats si équipé d'une Hache  \n";
-            helpMessage += "= Skill actif : Polyvalence [All stats +1]\n";
-            helpMessage += "= Sorcier | FOR 2 | RES 3 | AGI 3 | LUK 8 | +2 dégats si équipé d'une Magie  \n";
-            helpMessage += "= Skill actif : Bouclier d'Ether [RES et AGI +2]\n";
-            helpMessage += "= Templier | FOR 3 | RES 8 | AGI 1 | LUK 4 | +2 dégats si équipé d'une Lance  \n";
-            helpMessage += "= Skill actif : Foi inébranlable [Démarre le combat avec 15 HP]\n";
-            helpMessage += "= Barbare | FOR 8 | RES 5 | AGI 1 | LUK 2 | +2 dégats si équipé d'une Epée  \n";
-            helpMessage += "= Skill actif : Fumée ninja [AGI +5]\n";
+            let helpMessage = "Discord Arena - Classes de personnage\n";
+            helpMessage += "[ Les combattants commencent à 10 HP - Les skills actifs ont 60% de chances de se lancer au début du combat ]  \n";
+            helpMessage += "Barbare | FOR 8 | RES 5 | AGI 1 | LUK 2 | +2 dégats si équipé d'une Hache  \n";
+            helpMessage += "Skill actif : Furie destructrice [FOR +3 - AGI et LUK à 0]\n";
+            helpMessage += "Aventurier | FOR 4 | RES 4 | AGI 4 | LUK 4 | +2 dégats si équipé d'une Hache  \n";
+            helpMessage += "Skill actif : Polyvalence [All stats +1]\n";
+            helpMessage += "Sorcier | FOR 2 | RES 3 | AGI 3 | LUK 8 | +2 dégats si équipé d'une Magie  \n";
+            helpMessage += "Skill actif : Bouclier d'Ether [RES et AGI +2]\n";
+            helpMessage += "Templier | FOR 3 | RES 8 | AGI 1 | LUK 4 | +2 dégats si équipé d'une Lance  \n";
+            helpMessage += "Skill actif : Foi inébranlable [Démarre le combat avec 15 HP]\n";
+            helpMessage += "Barbare | FOR 8 | RES 5 | AGI 1 | LUK 2 | +2 dégats si équipé d'une Epée  \n";
+            helpMessage += "Skill actif : Fumée ninja [AGI +5]\n";
             message.author.send(helpMessage);
             message.delete();
         }
@@ -182,7 +189,6 @@ function createNewCharacter(message, character) {
             console.log("Connected to " + dbName);
             const db = dbClient.db(dbName);
             const col = db.collection('characters');
-            //MongoDB Operations HERE
             await col.insertOne(character);
             console.log("Character successfully created in characters");
             const charVerif = await col.findOne({discordName: character.discordName});
@@ -190,7 +196,6 @@ function createNewCharacter(message, character) {
             message.reply("Bienvenue à toi, " + charVerif.class + " " + charVerif.discordName);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -250,7 +255,6 @@ function getInfosPerso(message) {
             message.author.send(replyDM);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -276,7 +280,6 @@ function addItemToDB(message, item) {
             getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -304,7 +307,6 @@ function equipItem(message, itemToEquipID) {
             getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -695,7 +697,6 @@ function startBattle(message, enemyName) {
             }
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -712,7 +713,6 @@ function setVictoryPhrase(message, phrase) {
             getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -729,7 +729,6 @@ function setSkillPhrase(message, phrase) {
             getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
@@ -746,12 +745,11 @@ function setDefeatPhrase(message, phrase) {
             getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
-            message.reply("Erreur NoSQL.");
         }
     })();
 }
 
-function getEmoji(emojiName) //Seulement pour les custom emojis, sinon mettre le caractère unicode directement dans le message
+function getEmoji(emojiName) //Seulement si utilisation de custom emojis, sinon mettre le caractère unicode de l'emoji directement dans le message.reply()
 {
     if(emojis!==null)
     {
