@@ -14,9 +14,9 @@ client.login('Mzg1MzcxNjI2MDg4MzAwNTQ0.DQAY2A.YK6aoMM4ph5G3MIP7pAqgF_kl3U');
 client.on('ready', () => {
     //Changer les 2 ID en fonction de votre channel
     console.log('I am ready!');
-    server = client.guilds.get("256079257162350602");
+    server = client.guilds.get("165505321316384768");
     console.log(`${server.name}`);
-    channel = server.channels.find(chan => chan.id === "384709036924469250");
+    channel = server.channels.find(chan => chan.id === "407908158393155587");
     channel.send("Arena, ready to serve.");
 });
 client.on('message', message => {
@@ -107,7 +107,10 @@ client.on('message', message => {
             equipItem(message, itemToEquipID);
             message.delete();
         }
-
+        if (command === "optimize" || command === "op") {
+            optimize(message);
+            message.delete();
+        }
         if (command === "battle") {
             const enemyName = args[0];
             if (enemyName === "")
@@ -304,6 +307,52 @@ function equipItem(message, itemToEquipID) {
             console.log(err.stack);
             message.reply("Erreur NoSQL.");
         }
+        
+    })();
+}
+function optimize(message) {
+    (async function () {
+        let dbClient;
+        try {
+            dbClient = await MongoClient.connect(url);
+            console.log("Connected to " + dbName);
+            const db = dbClient.db(dbName);
+            let listType=["Hache","Epee","Lance","Magie","Armure"]
+            let col = db.collection('items');
+            for (var power=0;power<6;power++)
+            {
+                for (var type=0;type<4;type++)
+                {
+                    col.find({characterName: message.author.username, itemPower:power,itemType:listType[type]}).toArray(0function(err, result) {
+                    if (err) throw err;
+                    console.log(result);
+                    db.close();
+                });
+                    
+                }
+             
+            }
+           
+            
+            if (await items.hasNext())
+            {
+                
+                
+                let itemToEquip = await items.next();
+                console.log("item sélectionné : ");
+                console.log(itemToEquip);
+                col = db.collection('characters');
+                if (itemToEquip.itemType === "Armure")
+                    await col.updateOne({discordName: message.author.username}, {$set: {armorEquipID: itemToEquip.itemID}});
+                else
+                    await col.findOneAndUpdate({discordName: message.author.username}, {$set: {weaponEquipID: itemToEquip.itemID}});
+            }
+            getInfosPerso(message);
+        } catch (err) {
+            console.log(err.stack);
+            message.reply("Erreur NoSQL.");
+        }
+        
     })();
 }
 
