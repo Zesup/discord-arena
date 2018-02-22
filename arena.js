@@ -108,7 +108,7 @@ client.on('message', message => {
                 itemPower: parseInt(args[2]),
                 number: parseInt("1")
             };
-            addItemToDB(message, item);
+            addItemToDB(item);
             message.delete();
         }
 
@@ -249,7 +249,7 @@ function getInfosPerso(message) {
                     while (await items.hasNext())
                     {
                         const obj = await items.next();
-                        replyDM += ("Item " + i + " : " + obj.itemType + " " + obj.itemName + " - Force " + obj.itemPower +  " [Exemplaires : " + obj.number + "]\n");
+                        replyDM += ("Item " + i + " : " + obj.itemType + " " + obj.itemName + " - Force " + obj.itemPower + " [Exemplaires : " + obj.number + "]\n");
                         i++;
                     }
                 }
@@ -261,7 +261,7 @@ function getInfosPerso(message) {
     })();
 }
 
-function addItemToDB(message, item) {
+function addItemToDB(item) {
     (async function () {
         let dbClient;
         try {
@@ -269,7 +269,7 @@ function addItemToDB(message, item) {
             console.log("Connected to " + dbName);
             const db = dbClient.db(dbName);
             const col = db.collection('items');
-            //Récupération du dernier item en date pour incrémentation de l'ID
+            //Récupération du dernier item en date pour incrémentation de l'ID            
             let lastItem = await col.find().sort({itemID: -1}).limit(1).next();
             if (lastItem !== null)
                 item.itemID = lastItem.itemID + 1;
@@ -279,32 +279,6 @@ function addItemToDB(message, item) {
             console.log(item);
             await col.insertOne(item);
             console.log("Item successfully created in DB items");
-            getInfosPerso(message);
-        } catch (err) {
-            console.log(err.stack);
-        }
-    })();
-}
-
-function addItemToDBSilently(item) {
-    (async function () {
-        let dbClient;
-        try {
-            dbClient = await MongoClient.connect(url);
-            console.log("Connected to " + dbName);
-            const db = dbClient.db(dbName);
-            const col = db.collection('items');
-            //Récupération du dernier item en date pour incrémentation de l'ID
-            let lastItem = await col.find().sort({itemID: -1}).limit(1).next();
-            if (lastItem !== null)
-                item.itemID = lastItem.itemID + 1;
-            else
-                item.itemID = 1;
-            console.log("nouvel item");
-            console.log(item);
-            await col.insertOne(item);
-            console.log("Item successfully created in DB items");
-
         } catch (err) {
             console.log(err.stack);
         }
@@ -318,26 +292,29 @@ function equipItem(message, itemToEquipID) {
             dbClient = await MongoClient.connect(url);
             console.log("Connected to " + dbName);
             const db = dbClient.db(dbName);
-            let col = db.collection('items');
-            let items = await col.find({characterName: message.author.username}).skip(itemToEquipID - 1);
-            if (await items.hasNext())
+            if (itemToEquipID > 0)
             {
-                let itemToEquip = await items.next();
-                console.log("item sélectionné : ");
-                console.log(itemToEquip);
-                col = db.collection('characters');
-                if (itemToEquip.itemType === "Armure")
-                    await col.updateOne({discordName: message.author.username}, {$set: {armorEquipID: itemToEquip.itemID}});
-                else
-                    await col.findOneAndUpdate({discordName: message.author.username}, {$set: {weaponEquipID: itemToEquip.itemID}});
+                let col = db.collection('items');
+                let items = await col.find({characterName: message.author.username}).skip(itemToEquipID - 1);
+                if (await items.hasNext())
+                {
+                    let itemToEquip = await items.next();
+                    console.log("item sélectionné : ");
+                    console.log(itemToEquip);
+                    col = db.collection('characters');
+                    if (itemToEquip.itemType === "Armure")
+                        await col.findOneAndUpdate({discordName: message.author.username}, {$set: {armorEquipID: itemToEquip.itemID}});
+                    else
+                        await col.findOneAndUpdate({discordName: message.author.username}, {$set: {weaponEquipID: itemToEquip.itemID}});
+                }
             }
             getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
         }
-
     })();
 }
+
 function optimize(message) {
     (async function () {
         let dbClient;
@@ -345,23 +322,43 @@ function optimize(message) {
             dbClient = await MongoClient.connect(url);
             console.log("Connected to " + dbName);
             const db = dbClient.db(dbName);
-            let listType = ["Hache", "Epee", "Lance", "Magie", "Armure"]
-            let col = db.collection('items');
+            let listType = ["Hache", "Epee", "Lance", "Magie", "Armure"];
+            let col = db.collection('characters');
             var isChanged = 0;
             var compteur = 0;
+            const character = await col.findOne({discordName: message.author.username});
+            let equipedWeaponID = character.weaponEquipID;
+            let equipedArmorID = character.armorEquipID;
             for (var power = 0; power < 6; power++)
             {
-                for (var type = 0; type < 4; type++)
+                for (var type = 0; type < 5; type++)
                 {
+                    col = db.collection('items');
                     let result = await col.find({characterName: message.author.username, itemPower: power, itemType: listType[type]}).toArray();
+                    
                     if (result.length > 1)
                     {
+                        col = db.collection('characters');
                         console.log(result.length);
                         isChanged = 1;
                         for (var k = 0; k < result.length; k++)
                         {
                             compteur += result[k].number;
+                            if (type === 4)
+                            {
+                                if (result[k].itemID === equipedArmorID)
+                                {
+                                    await col.findOneAndUpdate({discordName: message.author.username}, {$set: {armorEquipID: 0}});
+                                }
+                            } else
+                            {
+                                if (result[k].itemID === equipedWeaponID)
+                                {
+                                    await col.findOneAndUpdate({discordName: message.author.username}, {$set: {weaponEquipID: 0}});
+                                }
+                            }
                         }
+                        col = db.collection('items');
                         console.log("compteur1st " + compteur);
                         console.log("ischanged1st " + isChanged);
                     } else {
@@ -370,6 +367,7 @@ function optimize(message) {
                     }
                     if (isChanged === 1)
                     {
+                        
                         await col.deleteMany({characterName: message.author.username, itemPower: power, itemType: listType[type]}, function (err, obj) {
                             if (err)
                                 throw err;
@@ -389,7 +387,7 @@ function optimize(message) {
                             };
                             console.log("item 1 added ");
                             console.log(item1);
-                            addItemToDBSilently(item1);
+                            await addItemToDB(item1);
                         }
                         if (Math.floor(compteur / 5) > 0) {
                             let itemLoot = await col.findOne({itemType: listType[type], itemPower: (power + 1)});
@@ -403,12 +401,11 @@ function optimize(message) {
                             };
                             console.log("item 2 added ");
                             console.log(item2);
-                            addItemToDBSilently(item2);
+                            await addItemToDB(item2);
                         }
                     }
                 }
             }
-            //await getInfosPerso(message);
         } catch (err) {
             console.log(err.stack);
         }
@@ -424,18 +421,18 @@ function startBattle(message, enemyName) {
             const db = dbClient.db(dbName);
             let col = db.collection('characters');
             let colPhrases = db.collection('generic_catchphrases');
-            const attacker = await col.findOne({discordName: message.author.username});
-            console.log("attaquant :" + attacker.discordName);
+            const attacker = await col.findOne({discordName: message.author.username});           
             if (attacker === null)
                 message.reply("Vous n'avez pas encore de personnage. Utilisez !create <classe> <niveau>");
             else
             {
-                const defender = await col.findOne({discordName: enemyName});
-                console.log("défenseur :" + defender.discordName);
+                console.log("attaquant :" + attacker.discordName);
+                const defender = await col.findOne({discordName: enemyName});                
                 if (defender === null)
                     message.reply("Adversaire introuvable");
                 else
                 {
+                    console.log("défenseur :" + defender.discordName);
                     let attackUser = server.members.get(attacker.discordID);
                     let defendUser = server.members.get(defender.discordID);
                     channel.send(`🤜💥🤛 Début du combat entre ${attackUser} et ${defendUser} !`);
@@ -788,7 +785,9 @@ function startBattle(message, enemyName) {
                             itemPower: power,
                             number: 1
                         };
-                        addItemToDB(message, item);
+                        addItemToDB(item);
+                        optimize(message);
+                        getInfosPerso(message);
                     }
                 }
             }
