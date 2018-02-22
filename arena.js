@@ -281,6 +281,31 @@ function addItemToDB(message, item) {
         }
     })();
 }
+function addItemToDBSilently(message, item) {
+    (async function () {
+        let dbClient;
+        try {
+            dbClient = await MongoClient.connect(url);
+            console.log("Connected to " + dbName);
+            const db = dbClient.db(dbName);
+            const col = db.collection('items');
+            //Récupération du dernier item en date pour incrémentation de l'ID
+            let lastItem = await col.find().sort({itemID: -1}).limit(1).next();
+            if (lastItem !== null)
+                item.itemID = lastItem.itemID + 1;
+            else
+                item.itemID = 1;
+            console.log("nouvel item");
+            console.log(item);
+            await col.insertOne(item);
+            console.log("Item successfully created in DB items");
+            
+        } catch (err) {
+            console.log(err.stack);
+            message.reply("Erreur NoSQL.");
+        }
+    })();
+}
 
 function equipItem(message, itemToEquipID) {
     (async function () {
@@ -323,31 +348,66 @@ function optimize(message) {
             {
                 for (var type=0;type<4;type++)
                 {
-                    col.find({characterName: message.author.username, itemPower:power,itemType:listType[type]}).toArray(0function(err, result) {
+                    var isChanged=0;
+                    int compteur=0;
+                    col.find({characterName: message.author.username, itemPower:power,itemType:listType[type]}).toArray(function(err, result) {
                     if (err) throw err;
-                    console.log(result);
-                    db.close();
-                });
+                    if (result.length>1)
+                    {
+                        isChanged=1;
+                        
+                        for (var k=0;k<result.length;k++)
+                        {
+                            compteur+=result[k].number;
+                        }
+                   }
                     
+                    
+                        
+                    
+                });
+                   if (isChanged===1)
+                    {
+                        col.deleteMany({characterName: message.author.username, itemPower:power,itemType:listType[type]}, function(err, obj) {
+                        if (err) throw err;
+                        //console.log(obj.result.n + " document(s) deleted");
+                        });
+                        
+                        cole = db.collection('generic_equipments');
+                        
+                            let itemLoot = await cole.findOne({itemType: listType[type], itemPower: (power+1)});
+                            const item1 = {
+                                itemID: null,
+                                characterName: message.author.username,
+                                itemType: listType[type],
+                                itemName: itemLoot.itemName,
+                                itemPower: (power),
+                                number:(compteur%5)
+                            };
+                        addItemToDBSilently(message, item1);
+                        if (compteur/5>0) {
+                            cole = db.collection('generic_equipments');
+                            let itemLoot = await cole.findOne({itemType: listType[type], itemPower: (power+1)});
+                            const item2 = {
+                                itemID: null,
+                                characterName: message.author.username,
+                                itemType: listType[type],
+                                itemName: itemLoot.itemName,
+                                itemPower: (power+1),
+                                number:(compteur/5)
+                            };
+                        
+                        addItemToDBSilently(message, item2);
+                    }
+                    } 
                 }
+                
              
             }
+             getInfosPerso(message);
            
             
-            if (await items.hasNext())
-            {
-                
-                
-                let itemToEquip = await items.next();
-                console.log("item sélectionné : ");
-                console.log(itemToEquip);
-                col = db.collection('characters');
-                if (itemToEquip.itemType === "Armure")
-                    await col.updateOne({discordName: message.author.username}, {$set: {armorEquipID: itemToEquip.itemID}});
-                else
-                    await col.findOneAndUpdate({discordName: message.author.username}, {$set: {weaponEquipID: itemToEquip.itemID}});
-            }
-            getInfosPerso(message);
+            
         } catch (err) {
             console.log(err.stack);
             message.reply("Erreur NoSQL.");
@@ -701,7 +761,8 @@ function startBattle(message, enemyName) {
                             characterName: attacker.discordName,
                             itemType: type,
                             itemName: itemLoot.itemName,
-                            itemPower: power
+                            itemPower: power,
+                            number:1
                         };
                         addItemToDB(message, item);
                     }

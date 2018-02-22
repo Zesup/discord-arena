@@ -1,35 +1,40 @@
 {
-	"validator" : {
-		"$jsonSchema" : {
-			"bsonType" : "object",
-			"required" : [
-				"characterName",
-				"itemName",
-				"itemType",
-				"itemPower"
-			],
-			"properties" : {
-				"characterName" : {
-					"bsonType" : "string"
-				},
-				"itemName" : {
-					"bsonType" : "string"
-				},
-				"itemType" : {
-					"enum" : [
-						"Lance",
-						"Epée",
-						"Hache"
-					],
-					"bsonType" : "string"
-				},
-				"itemPower" : {
-					"minimum" : 0,
-					"bsonType" : "int"
-				}
-			}
-		}
-	},
-	"validationLevel" : "strict",
-	"validationAction" : "error"
+    "validator": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": [
+                "characterName",
+                "itemName",
+                "itemType",
+                "itemPower",
+                "number"
+            ],
+            "properties": {
+                "characterName": {
+                    "bsonType": "string"
+                },
+                "itemName": {
+                    "bsonType": "string"
+                },
+                "itemType": {
+                    "enum": [
+                        "Lance",
+                        "Epée",
+                        "Hache"
+                    ],
+                    "bsonType": "string"
+                },
+                "itemPower": {
+                    "minimum": 0,
+                    "bsonType": "int"
+                },
+                "number": {
+                "minimum" : 0,
+                "bsonType": "int"
+            }
+        }
+    }
+},
+        "validationLevel" : "strict",
+        "validationAction" : "error"
 }
