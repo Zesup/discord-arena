@@ -6,15 +6,15 @@ var server = null;
 var channel = null;
 var emojis = null;
 
-//Customizable Discord Configuration
-const botSecretToken = 'Mzg1MzcxNjI2MDg4MzAwNTQ0.DQAY2A.YK6aoMM4ph5G3MIP7pAqgF_kl3U';
-const guildID = "256079257162350602";
-const channelID = "384709036924469250";
+//Customizable Discord Configuration - add yours
+const botSecretToken = '';
+const guildID = "";
+const channelID = "";
 
 //MongoDB Integration
 const mongo = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
-const url = 'mongodb://localhost:27017/arena';
+const url = ''; // DB url
 const dbName = 'arena';
 
 client.login(botSecretToken);
